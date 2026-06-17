@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { COLORS, MONO, SANS, ALL_CAPS, EMOJI_POOL, AI_MODELS, MODEL_PROVIDERS, PROVIDER_COLOR } from '@/lib/constants'
 import { modelById, pillVariant } from '@/lib/utils'
-import { styles, Dot, HR } from '@/features/ui'
+import { styles, Dot } from '@/features/ui'
 import type { Agent, AgentStatus } from '@/types'
 
 // ─── Agent card ───────────────────────────────────────────────────────────────

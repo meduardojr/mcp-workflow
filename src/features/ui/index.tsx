@@ -1,5 +1,5 @@
 import React from 'react'
-import { COLORS, MONO, SANS } from '@/lib/constants'
+import { COLORS, MONO } from '@/lib/constants'
 
 // ─── Style objects ────────────────────────────────────────────────────────────
 export const styles = {
