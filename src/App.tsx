@@ -72,6 +72,13 @@ export default function App() {
     setShowInspector(true)
   }
 
+  const handleSetConnecting = (val: boolean) => {
+    setConnecting(val)
+    if (val) {
+      setShowInspector(false)
+    }
+  }
+
   const handleClearSelection = () => {
     setSelectedId(null)
     setShowInspector(false)
@@ -256,7 +263,7 @@ export default function App() {
         onUpdate={handleUpdateNode}
         onDelete={handleDeleteNode}
         connecting={connecting}
-        setConnecting={setConnecting}
+        setConnecting={handleSetConnecting}
       />
 
       {showNewWf && (
