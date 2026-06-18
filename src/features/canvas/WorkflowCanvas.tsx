@@ -196,7 +196,7 @@ export const WorkflowCanvas: React.FC<Props> = ({
           const model   = modelById(agent.model)
           const task    = taskByType(node.type)
           const sel     = selectedId === node.id
-          const isRun   = runningId  === node.id
+          const isRun   = runningId  === node.id || node.status === 'running'
           const sc      = statusColor(node.status)
           const provCol = PROVIDER_COLOR[model.provider] ?? COLORS.amber
 

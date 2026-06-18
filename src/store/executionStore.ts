@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 import { topoSort, nowTime, agentById, modelById } from '@/lib/utils'
 import { useWorkflowsStore } from './workflowsStore'
 import { useAgentsStore }   from './agentsStore'
-import type { LogEvent, RunState } from '@/types'
+import type { LogEvent, RunState, NodeStatus } from '@/types'
 
 interface ExecutionState {
   runState:     RunState
@@ -48,18 +48,36 @@ export const useExecutionStore = create<ExecutionState>()(
       const idleStatuses = Object.fromEntries(wf.nodes.map(n => [n.id, 'idle' as const]))
       useWorkflowsStore.getState().setNodeStatuses(wfId, idleStatuses)
 
-      // Topological sort
-      const order = topoSort(wf.nodes.map(n => n.id), wf.edges)
+      // Set up parents and children lookups
+      const parentsMap = new Map<string, string[]>()
+      const childrenMap = new Map<string, string[]>()
+      for (const node of wf.nodes) {
+        parentsMap.set(node.id, wf.edges.filter(e => e.to === node.id).map(e => e.from))
+        childrenMap.set(node.id, wf.edges.filter(e => e.from === node.id).map(e => e.to))
+      }
 
-      for (const nodeId of order) {
+      const nodeStatuses = new Map<string, NodeStatus>()
+      for (const node of wf.nodes) {
+        nodeStatuses.set(node.id, 'idle')
+      }
+
+      let runningCount = 0
+      let resolveWorkflow: (() => void) | null = null
+      const workflowPromise = new Promise<void>(resolve => {
+        resolveWorkflow = resolve
+      })
+
+      const executeNode = async (nodeId: string) => {
         const node = wf.nodes.find(n => n.id === nodeId)
-        if (!node) continue
+        if (!node) return
+
+        runningCount++
+        nodeStatuses.set(nodeId, 'running')
+        set(state => { state.runningNodeId = nodeId })
+        useWorkflowsStore.getState().setNodeStatuses(wfId, { [nodeId]: 'running' })
 
         const agent = agentById(agents, node.agentId)
         const model = modelById(agent.model)
-
-        set(state => { state.runningNodeId = nodeId })
-        useWorkflowsStore.getState().setNodeStatuses(wfId, { [nodeId]: 'running' })
 
         push('running', `[${agent.emoji} ${agent.name}] ${node.label}`,
           `${model.provider}/${model.label} · ${node.type}`)
@@ -68,7 +86,10 @@ export const useExecutionStore = create<ExecutionState>()(
         await new Promise<void>(r => setTimeout(r, 800 + Math.random() * 900))
 
         const ok = agent.status !== 'warn' || Math.random() > 0.35
-        useWorkflowsStore.getState().setNodeStatuses(wfId, { [nodeId]: ok ? 'done' : 'error' })
+        const finalStatus: NodeStatus = ok ? 'done' : 'error'
+
+        nodeStatuses.set(nodeId, finalStatus)
+        useWorkflowsStore.getState().setNodeStatuses(wfId, { [nodeId]: finalStatus })
 
         push(
           ok ? 'done' : 'error',
@@ -76,7 +97,46 @@ export const useExecutionStore = create<ExecutionState>()(
           ok ? '' : agent.status === 'warn' ? 'AGENT DEGRADED — retry 1/3' : ''
         )
 
-        if (!ok) await new Promise<void>(r => setTimeout(r, 400))
+        if (!ok) {
+          await new Promise<void>(r => setTimeout(r, 400))
+        }
+
+        // Trigger child nodes if successful
+        if (ok) {
+          const children = childrenMap.get(nodeId) ?? []
+          for (const childId of children) {
+            const parents = parentsMap.get(childId) ?? []
+            const allParentsDone = parents.every(pId => nodeStatuses.get(pId) === 'done')
+            if (allParentsDone && nodeStatuses.get(childId) === 'idle') {
+              executeNode(childId)
+            }
+          }
+        }
+
+        runningCount--
+        if (runningCount === 0) {
+          resolveWorkflow?.()
+        }
+      }
+
+      // Start the root nodes (nodes with 0 incoming dependencies)
+      const rootNodes = wf.nodes.filter(n => (parentsMap.get(n.id) ?? []).length === 0)
+
+      if (rootNodes.length === 0 && wf.nodes.length > 0) {
+        // Fallback: if there are nodes but no roots (e.g. cyclic), start topo sorted first node.
+        const order = topoSort(wf.nodes.map(n => n.id), wf.edges)
+        if (order.length > 0) {
+          executeNode(order[0])
+        }
+      } else {
+        for (const root of rootNodes) {
+          executeNode(root.id)
+        }
+      }
+
+      // Wait for all execution paths to finish
+      if (wf.nodes.length > 0) {
+        await workflowPromise
       }
 
       set(state => {
