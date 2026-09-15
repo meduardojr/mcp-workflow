@@ -50,10 +50,12 @@ Execution modes now behave distinctly, invalid graphs are rejected, failed runs 
 
 ### Phase 2 — Add the Netlify backend
 
-- Replace local seed-only state with Netlify Database tables for agents, workflows, workflow versions, runs, and execution events.
-- Add server-side APIs with schema validation and consistent spec-compatible wire names.
-- Add authentication, per-user ownership, and authorization for workflow and registry mutations.
-- Preserve optimistic UI behavior while surfacing loading, empty, and server error states.
+- [x] Add Netlify Database tables and a deploy-time migration for agents, workflows, workflow versions, runs, and execution events.
+- [x] Add an authenticated state API with schema validation, server-side DAG validation, and consistent persisted wire names.
+- [x] Enforce per-user ownership and authorization at the server API boundary.
+- [ ] Connect the browser stores to the API so local seed-only state is replaced by persisted state.
+- [ ] Add browser sign-up, sign-in, callback, recovery, and sign-out flows.
+- [ ] Preserve optimistic UI behavior while surfacing loading, empty, and server error states.
 
 ### Phase 3 — Implement real execution
 
