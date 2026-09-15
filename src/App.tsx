@@ -123,7 +123,7 @@ export default function App() {
     updateNode(wf.id, selectedId, patch)
   }
 
-  const runLabel = runState === 'running' ? '⏳ RUNNING' : runState === 'done' ? '✓ DONE' : '▶ RUN'
+  const runLabel = runState === 'running' ? '⏳ RUNNING' : runState === 'done' ? '✓ DONE' : runState === 'error' ? '✗ FAILED' : '▶ RUN'
 
   // ─── Render ─────────────────────────────────────────────────────────────
   return (

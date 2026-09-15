@@ -107,7 +107,7 @@ export const SEED_WORKFLOWS: Workflow[] = [
       { id: 'n6', x: 520, y: 60, label: 'Write Report',   type: 'write_file', agentId: 'file-agent-v1', status: 'idle', prompt: 'Write review to /output/review.md' },
     ],
     edges: [{ id: 'e3', from: 'n4', to: 'n5' }, { id: 'e4', from: 'n5', to: 'n6' }],
-    schedule: { mode: 'daily', time: '08:00', days: [] },
+    schedule: { mode: 'daily', time: '08:00', days: [], tz: 'UTC' },
   },
 ]
 
