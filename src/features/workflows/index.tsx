@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { COLORS, MONO, SANS } from '@/lib/constants'
 import { styles, SlidePanel, Modal, SelectInput } from '@/features/ui'
 import type { ExecutionMode, Schedule, Workflow } from '@/types'
+import { isValidSchedule } from '@/lib/schedule'
 
 // ─── Workflows slide-up sheet ─────────────────────────────────────────────────
 interface WorkflowsSheetProps {
@@ -118,6 +119,7 @@ export const NewTaskModal: React.FC<NewTaskModalProps> = ({ agents, onClose, onA
 
   const tt = TASK_TYPES.find(t => t.value === type) ?? TASK_TYPES[0]
   const da = agentById(agents, tt.defaultAgent)
+  const assignedAgentId = agents.find(agent => agent.id === tt.defaultAgent)?.id ?? agents[0]?.id
   const m  = modelById(da.model)
   const pc = PROVIDER_COLOR[m.provider] ?? COLORS.amber
 
@@ -141,7 +143,7 @@ export const NewTaskModal: React.FC<NewTaskModalProps> = ({ agents, onClose, onA
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button style={{ ...styles.btn('sec'), flex: 1 }} onClick={onClose}>CANCEL</button>
-        <button style={{ ...styles.btn('pri'), flex: 1 }} disabled={!label.trim()} onClick={() => { onAdd({ label: label.trim(), type, agentId: tt.defaultAgent, prompt }); onClose() }}>
+        <button style={{ ...styles.btn('pri'), flex: 1 }} disabled={!label.trim() || !assignedAgentId} onClick={() => { if (assignedAgentId) onAdd({ label: label.trim(), type, agentId: assignedAgentId, prompt }); onClose() }}>
           ADD
         </button>
       </div>
@@ -162,6 +164,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({ current, onClose, 
   const [mode, setMode] = useState<Schedule['mode']>(current?.mode ?? 'once')
   const [time, setTime] = useState(current?.time ?? '09:00')
   const [days, setDays] = useState<string[]>(current?.days ?? [])
+  const defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  const [tz, setTz] = useState(current?.tz ?? defaultTz)
 
   const toggleDay = (d: string) => setDays(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d])
 
@@ -182,6 +186,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({ current, onClose, 
         <label style={styles.label}>Time</label>
         <input type="time" style={styles.input} value={time} onChange={e => setTime(e.target.value)} />
       </div>
+      <div>
+        <label style={styles.label}>IANA timezone</label>
+        <input style={styles.input} value={tz} onChange={e => setTz(e.target.value)} placeholder="e.g. America/New_York" />
+      </div>
       {mode === 'weekly' && (
         <div>
           <label style={styles.label}>Days</label>
@@ -198,7 +206,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({ current, onClose, 
       <div style={{ display: 'flex', gap: 6 }}>
         {current && <button style={styles.btn('danger')} onClick={() => { onSave(null); onClose() }}>REMOVE</button>}
         <button style={{ ...styles.btn('sec'), flex: 1 }} onClick={onClose}>CANCEL</button>
-        <button style={{ ...styles.btn('pri'), flex: 1 }} onClick={() => { onSave({ mode, time, days }); onClose() }}>
+        <button style={{ ...styles.btn('pri'), flex: 1 }} disabled={!isValidSchedule({ mode, time, days, tz })} onClick={() => { onSave({ mode, time, days, tz }); onClose() }}>
           {current ? 'UPDATE' : 'SET'}
         </button>
       </div>

@@ -179,12 +179,13 @@ interface AgentsViewProps {
   agents: Agent[]
   onAdd: (data: Omit<Agent, 'id' | 'version'>) => void
   onUpdate: (id: string, patch: Partial<Agent>) => void
-  onRemove: (id: string) => void
+  onRemove: (id: string) => boolean
 }
 
 export const AgentsView: React.FC<AgentsViewProps> = ({ agents, onAdd, onUpdate, onRemove }) => {
   const [editId,  setEditId]  = useState<string | null>(null)
   const [showNew, setShowNew] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const activeCount   = agents.filter(a => a.status === 'active').length
   const degradedCount = agents.filter(a => a.status === 'warn').length
@@ -217,6 +218,7 @@ export const AgentsView: React.FC<AgentsViewProps> = ({ agents, onAdd, onUpdate,
       </div>
 
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {deleteError && <div style={{ color: COLORS.red, fontFamily: MONO, fontSize: 10, padding: 8, border: `1px solid ${COLORS.red}` }}>{deleteError}</div>}
         {agents.map(a => (
           <AgentCard
             key={a.id}
@@ -224,7 +226,10 @@ export const AgentsView: React.FC<AgentsViewProps> = ({ agents, onAdd, onUpdate,
             expanded={editId === a.id}
             onToggle={() => setEditId(editId === a.id ? null : a.id)}
             onSave={patch => { onUpdate(a.id, patch); setEditId(null) }}
-            onDelete={() => { onRemove(a.id); setEditId(null) }}
+            onDelete={() => {
+              if (onRemove(a.id)) { setEditId(null); setDeleteError('') }
+              else setDeleteError('AGENT IS ASSIGNED TO A WORKFLOW. REASSIGN ITS TASKS BEFORE DELETING.')
+            }}
           />
         ))}
 

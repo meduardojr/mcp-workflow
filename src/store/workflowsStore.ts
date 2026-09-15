@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { SEED_WORKFLOWS } from '@/lib/constants'
 import { uid } from '@/lib/utils'
+import { validateGraph } from '@/lib/executionEngine'
+import { isValidSchedule } from '@/lib/schedule'
 import type { ExecutionMode, Schedule, TaskNode, Workflow, WorkflowEdge } from '@/types'
 
 interface WorkflowsState {
@@ -17,7 +19,7 @@ interface WorkflowsState {
   updateNode:     (wfId: string, nodeId: string, patch: Partial<TaskNode>) => void
   removeNode:     (wfId: string, nodeId: string) => void
   // edge CRUD
-  addEdge:        (wfId: string, from: string, to: string) => void
+  addEdge:        (wfId: string, from: string, to: string) => boolean
   removeEdge:     (wfId: string, edgeId: string) => void
   // schedule
   setSchedule:    (wfId: string, schedule: Schedule | null) => void
@@ -88,16 +90,19 @@ export const useWorkflowsStore = create<WorkflowsState>()(
         wf.edges  = wf.edges.filter(e => e.from !== nodeId && e.to !== nodeId)
       }),
 
-    addEdge: (wfId, from, to) =>
+    addEdge: (wfId, from, to) => {
+      let added = false
       set(state => {
         const wf = state.workflows.find(w => w.id === wfId)
         if (!wf) return
-        const dup = wf.edges.some(e => e.from === from && e.to === to)
-        if (!dup) {
-          const edge: WorkflowEdge = { id: uid('e'), from, to }
+        const edge: WorkflowEdge = { id: uid('e'), from, to }
+        if (validateGraph(wf.nodes, [...wf.edges, edge]).valid) {
           wf.edges.push(edge)
+          added = true
         }
-      }),
+      })
+      return added
+    },
 
     removeEdge: (wfId, edgeId) =>
       set(state => {
@@ -108,7 +113,7 @@ export const useWorkflowsStore = create<WorkflowsState>()(
     setSchedule: (wfId, schedule) =>
       set(state => {
         const wf = state.workflows.find(w => w.id === wfId)
-        if (wf) wf.schedule = schedule
+        if (wf && (schedule === null || isValidSchedule(schedule))) wf.schedule = schedule
       }),
 
     setNodeStatuses: (wfId, statuses) =>

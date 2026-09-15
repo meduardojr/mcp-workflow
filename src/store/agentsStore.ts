@@ -3,13 +3,14 @@ import { immer } from 'zustand/middleware/immer'
 import { SEED_AGENTS } from '@/lib/constants'
 import { uid } from '@/lib/utils'
 import type { Agent } from '@/types'
+import { useWorkflowsStore } from './workflowsStore'
 
 interface AgentsState {
   agents: Agent[]
   // actions
   addAgent:    (data: Omit<Agent, 'id' | 'version'>) => void
   updateAgent: (id: string, patch: Partial<Agent>) => void
-  removeAgent: (id: string) => void
+  removeAgent: (id: string) => boolean
 }
 
 export const useAgentsStore = create<AgentsState>()(
@@ -32,9 +33,14 @@ export const useAgentsStore = create<AgentsState>()(
         if (idx !== -1) Object.assign(state.agents[idx], patch)
       }),
 
-    removeAgent: id =>
+    removeAgent: id => {
+      if (useWorkflowsStore.getState().workflows.some(workflow => workflow.nodes.some(node => node.agentId === id))) return false
+      let removed = false
       set(state => {
+        removed = state.agents.some(agent => agent.id === id)
         state.agents = state.agents.filter(a => a.id !== id)
-      }),
+      })
+      return removed
+    },
   }))
 )

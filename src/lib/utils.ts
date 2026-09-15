@@ -5,9 +5,11 @@ import type { Agent, AIModel, TaskType } from '@/types'
 export const uid = (prefix: string): string =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`
 
-/** Find an agent by id, falling back to the first agent */
+/** Find an agent by id. UI callers receive a safe placeholder for stale references. */
 export const agentById = (agents: Agent[], id: string): Agent =>
-  agents.find(a => a.id === id) ?? agents[0]
+  agents.find(a => a.id === id) ?? agents[0] ?? {
+    id: 'missing-agent', name: 'Missing agent', emoji: '⚠️', caps: [], status: 'offline', version: '0.0.0', model: AI_MODELS[0].id,
+  }
 
 /** Find a task type definition by value */
 export const taskByType = (value: string): TaskType =>
@@ -19,7 +21,7 @@ export const modelById = (id: string): AIModel =>
 
 /** Map a status string to a colour token key */
 export const pillVariant = (status: string): string =>
-  ({ active: 'green', idle: 'muted', warn: 'amber', running: 'cyan', done: 'green', error: 'red' }[status] ?? 'muted')
+  ({ active: 'green', idle: 'muted', warn: 'amber', running: 'cyan', done: 'green', error: 'red', blocked: 'amber' }[status] ?? 'muted')
 
 /** Topological sort of workflow nodes using Kahn's algorithm */
 export function topoSort(

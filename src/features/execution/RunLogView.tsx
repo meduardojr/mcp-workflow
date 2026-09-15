@@ -35,6 +35,7 @@ export const RunLogView: React.FC<Props> = ({ log, runState, workflow, onClear }
           <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, color: COLORS.text }}>RUN LOG</span>
           {runState === 'running' && <span style={styles.pill('cyan')}>LIVE</span>}
           {runState === 'done'    && <span style={styles.pill('green')}>DONE</span>}
+          {runState === 'error'   && <span style={styles.pill('red')}>FAILED</span>}
         </div>
         <button style={styles.btn('sec', { padding: '5px 12px', fontSize: 10 })} onClick={onClear}>CLEAR</button>
       </div>

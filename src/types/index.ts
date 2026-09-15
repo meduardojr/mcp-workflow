@@ -25,7 +25,7 @@ export interface AIModel {
 
 // ─── Workflow ─────────────────────────────────────────────────────────────────
 
-export type NodeStatus = 'idle' | 'running' | 'done' | 'error'
+export type NodeStatus = 'idle' | 'running' | 'done' | 'error' | 'blocked'
 export type ExecutionMode = 'dag' | 'sequential' | 'parallel'
 
 export interface TaskNode {
@@ -49,6 +49,7 @@ export interface Schedule {
   mode: 'once' | 'daily' | 'weekly'
   time: string
   days: string[]
+  tz: string
 }
 
 export interface Workflow {
@@ -64,7 +65,7 @@ export interface Workflow {
 // ─── Execution ────────────────────────────────────────────────────────────────
 
 export type LogEventType = 'info' | 'running' | 'done' | 'error'
-export type RunState = 'idle' | 'running' | 'done'
+export type RunState = 'idle' | 'running' | 'done' | 'error'
 
 export interface LogEvent {
   type: LogEventType

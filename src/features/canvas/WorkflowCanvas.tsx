@@ -17,7 +17,7 @@ interface Props {
 }
 
 const statusColor = (s: string) =>
-  ({ active: COLORS.green, idle: COLORS.muted, warn: COLORS.amber, running: COLORS.cyan, done: COLORS.green, error: COLORS.red }[s] ?? COLORS.muted)
+  ({ active: COLORS.green, idle: COLORS.muted, warn: COLORS.amber, running: COLORS.cyan, done: COLORS.green, error: COLORS.red, blocked: COLORS.amber }[s] ?? COLORS.muted)
 
 export const WorkflowCanvas: React.FC<Props> = ({
   nodes, edges, agents, selectedId, runningId, connecting,
